@@ -3,9 +3,6 @@
  
 
 ## AIM:
- 
-
- 
 
 To write a C program to implement the Playfair Substitution technique.
 
@@ -26,62 +23,126 @@ To encrypt a message, one would break the message into digrams (groups of 2 lett
 ## ALGORITHM:
 
 STEP-1: Read the plain text from the user.
+
 STEP-2: Read the keyword from the user.
+
 STEP-3: Arrange the keyword without duplicates in a 5*5 matrix in the row order and fill the remaining cells with missed out letters in alphabetical order. Note that ‘i’ and ‘j’ takes the same cell.
+
 STEP-4: Group the plain text in pairs and match the corresponding corner letters by forming a rectangular grid.
+
 STEP-5: Display the obtained cipher text.
-
-
 
 
 ## PROGRAM:
 ~~~
-#include<stdio.h>
-#include<string.h>
-int main()
-{
-    unsigned int a[3][3]={{6,24,1},{13,16,10},{20,17,15}};
-    unsigned int b[3][3]={{8,5,10},{21,8,21},{21,12,8}};
-    int i,j, t=0;
-    unsigned int c[20],d[20];
-    char msg[20];
-    scanf("%s",msg);
-    printf("Enter plain text:%s\n",msg);
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#define SIZE 5
 
-    for(i=0;i<strlen(msg);i++)
-    {
-        c[i]=msg[i]-65;
-        printf("%d ",c[i]);
-    }
-    for(i=0;i<3;i++)
-    {
-        t=0;
-        for(j=0;j<3;j++)
-        {
-            t=t+(a[i][j]*c[j]);
+void prepareText(const char *plaintext, char *out) {
+    int i = 0, j = 0;
+    int len = strlen(plaintext);
+    while (i < len) {
+        if (isalpha(plaintext[i])) {
+            char c = toupper(plaintext[i]);
+            if (c == 'J') c = 'I';
+            out[j++] = c;
         }
-        d[i]=t%26;
+        i++;
     }
-    printf("\nEncrypted Cipher Text :");
-    for(i=0;i<3;i++)
-    printf(" %c",d[i]+65);
-    for(i=0;i<3;i++)
-    {
-        t=0;
-        for(j=0;j<3;j++)
-        {
-            t=t+(b[i][j]*d[j]);
+    out[j] = '\0';
+    int n = strlen(out);
+    for (i = 0; i < n; i += 2) {
+        if (out[i + 1] == '\0') {
+            out[i + 1] = 'X';
+            out[i + 2] = '\0';
+            n++;
+        } else if (out[i] == out[i + 1]) {
+            for (int k = n; k > i + 1; k--)
+                out[k] = out[k - 1];
+            out[i + 1] = 'X';
+            n++;
         }
-        c[i]=t%26;
     }
-    printf("\nDecrypted Cipher Text :");
-    for(i=0;i<3;i++)
-    printf(" %c",c[i]+65);
+}
+
+void generateKeyTable(const char *key, char keyTable[SIZE][SIZE]) {
+    int dict[26] = {0};
+    int i, j, idx = 0;
+    char c;
+    // Copy key characters
+    for (i = 0; key[i] && idx < 25; i++) {
+        c = toupper(key[i]);
+        if (c == 'J') c = 'I';
+        if (isalpha(c) && !dict[c - 'A']) {
+            keyTable[idx / 5][idx % 5] = c;
+            dict[c - 'A'] = 1;
+            idx++;
+        }
+    }
+    // Copy rest of alphabet
+    for (c = 'A'; c <= 'Z' && idx < 25; c++) {
+        if (c == 'J') continue;
+        if (!dict[c - 'A']) {
+            keyTable[idx / 5][idx % 5] = c;
+            dict[c - 'A'] = 1;
+            idx++;
+        }
+    }
+}
+
+void findPos(char keyTable[SIZE][SIZE], char c, int *row, int *col) {
+    int i, j;
+    for (i = 0; i < 5; i++) {
+        for (j = 0; j < 5; j++) {
+            if (keyTable[i][j] == c) {
+                *row = i;
+                *col = j;
+                return;
+            }
+        }
+    }
+}
+
+void encrypt(const char *pt, char keyTable[SIZE][SIZE], char *ct) {
+    int i, row1, col1, row2, col2;
+    for (i = 0; pt[i] && pt[i+1]; i += 2) {
+        findPos(keyTable, pt[i], &row1, &col1);
+        findPos(keyTable, pt[i+1], &row2, &col2);
+        if (row1 == row2) {
+            ct[i]   = keyTable[row1][(col1+1)%5];
+            ct[i+1] = keyTable[row2][(col2+1)%5];
+        } else if (col1 == col2) {
+            ct[i]   = keyTable[(row1+1)%5][col1];
+            ct[i+1] = keyTable[(row2+1)%5][col2];
+        } else {
+            ct[i]   = keyTable[row1][col2];
+            ct[i+1] = keyTable[row2][col1];
+        }
+    }
+    ct[i] = '\0';
+}
+
+int main() {
+    char keyword[100], plaintext[200], prepared[200], keyTable[SIZE][SIZE], ciphertext[200];
+    printf("Enter keyword: ");
+    scanf("%s", keyword);
+    printf("Enter plaintext: ");
+    scanf("%s", plaintext);
+
+    prepareText(plaintext, prepared);
+    generateKeyTable(keyword, keyTable);
+    encrypt(prepared, keyTable, ciphertext);
+
+    printf("Encrypted ciphertext: %s\n", ciphertext);
     return 0;
 }
 ~~~
 Output:
-<img width="1389" height="860" alt="Screenshot 2025-09-01 132439" src="https://github.com/user-attachments/assets/fc03a4eb-313d-4ef3-b7ce-4f27c94cc974" />
+
+<img width="1726" height="856" alt="Screenshot 2025-09-01 135833" src="https://github.com/user-attachments/assets/a9340754-fd87-4158-bbf5-40f881775386" />
 
 ## RESULT:
+
 The program was executed successfully.
